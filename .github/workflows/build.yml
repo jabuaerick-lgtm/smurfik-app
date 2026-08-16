@@ -8,23 +8,50 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: kivy/buildozer:latest
 
     steps:
     - uses: actions/checkout@v4
 
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install System Dependencies
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake build-essential libffi-dev libssl-dev
+
+    - name: Install Buildozer & Cython
+      run: |
+        pip install --upgrade pip
+        pip install "cython<3.0.0" "buildozer==1.5.0"
+
     - name: Configure and Build APK
       run: |
-        # root გაფრთხილების იგნორირება და ავტომატური ინიციალიზაცია
-        buildozer --warn_on_root=0 init
+        buildozer init
         
-        # პარამეტრების მოდიფიკაცია
-        sed -i 's/source.include_exts = py,png,jpg,kv,atlas/source.include_exts = py,png,txt/g' buildozer.spec
-        sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
+        # პარამეტრების მოდიფიკაცია Python-ით
+        python3 -c "
+        with open('buildozer.spec', 'r') as f:
+            content = f.read()
+
+        content = content.replace('source.include_exts = py,png,jpg,kv,atlas', 'source.include_exts = py,png,txt')
+        content = content.replace('# android.accept_sdk_license = False', 'android.accept_sdk_license = True')
         
-        # Buildozer-ის გაშვება root გაფრთხილების გარეშე
-        buildozer --warn_on_root=0 -v android debug
+        import re
+        content = re.sub(r'#?\s*android\.api\s*=.*', 'android.api = 33', content)
+        content = re.sub(r'#?\s*android\.minapi\s*=.*', 'android.minapi = 21', content)
+        content = re.sub(r'#?\s*android\.ndk\s*=.*', 'android.ndk = 25b', content)
+
+        with open('buildozer.spec', 'w') as f:
+            f.write(content)
+        "
+
+        # Buildozer-ის გაშვება ჩვეულებრივი მომხმარებლის უფლებებით
+        buildozer -v android debug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
