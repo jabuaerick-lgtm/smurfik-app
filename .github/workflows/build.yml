@@ -33,14 +33,18 @@ jobs:
       run: |
         python3 -m buildozer init
         
-        # პირდაპირ ჩავამატოთ საჭირო პარამეტრები buildozer.spec-ის ბოლოში
+        # პარამეტრების დამატება
         echo "android.accept_sdk_license = True" >> buildozer.spec
         echo "android.ndk = 25b" >> buildozer.spec
         echo "android.api = 33" >> buildozer.spec
         echo "android.minapi = 21" >> buildozer.spec
+        echo "android.build_tools_version = 33.0.2" >> buildozer.spec
         
-        # გაფართოებების გასწორება
         sed -i 's/source.include_exts = py,png,jpg,kv,atlas/source.include_exts = py,png,txt/g' buildozer.spec
+
+        # SDK ლიცენზიების იძულებითი დადასტურება წინასწარ
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        printf "\n24333f8a637b82e1e5135013f010181c1d3d0f48\n30724938280770415705372d292226e2a75e01a1\nd56f518547210e7258737cc017369167e3b08f51\n27442d2219e5a0036311e0161a1463a023470c83\nf15590327f292c25381a179577a7f4a21182a466" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
 
         python3 -m buildozer -v android debug
 
