@@ -8,15 +8,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: kivy/buildozer:latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Build APK with Buildozer Action
-      uses: ArtemShedov/buildozer-action@v1.2
-      with:
-        command: buildozer -v android debug
-        buildozer_version: 1.5.0
+    - name: Configure and Build APK
+      run: |
+        buildozer init
+        
+        # პარამეტრების მოდიფიკაცია
+        sed -i 's/source.include_exts = py,png,jpg,kv,atlas/source.include_exts = py,png,txt/g' buildozer.spec
+        sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
+        
+        # Buildozer-ის გაშვება Docker კონტეინერში
+        buildozer -v android debug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
