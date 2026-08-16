@@ -29,20 +29,31 @@ jobs:
         pip install --upgrade pip
         pip install "cython<3.0.0" "buildozer==1.5.0"
 
-    - name: Build APK with Buildozer
+    - name: Configure and Build APK
       run: |
         python3 -m buildozer init
         
-        # ძირითადი პარამეტრების გაწერა
-        echo "android.accept_sdk_license = True" >> buildozer.spec
-        echo "android.api = 33" >> buildozer.spec
-        echo "android.minapi = 21" >> buildozer.spec
-        echo "android.ndk = 25b" >> buildozer.spec
-        
-        sed -i 's/source.include_exts = py,png,jpg,kv,atlas/source.include_exts = py,png,txt/g' buildozer.spec
+        # Python სკრიპტი buildozer.spec-ის გარანტირებული მოდიფიკაციისთვის
+        python3 -c "
+        with open('buildozer.spec', 'r') as f:
+            content = f.read()
 
-        # Buildozer-ის გაშვება ავტომატური 'yes' პასუხით SDK/NDK-ს ინსტალაციის დროს
-        yes | python3 -m buildozer -v android debug
+        # ჩანაცვლებები
+        content = content.replace('source.include_exts = py,png,jpg,kv,atlas', 'source.include_exts = py,png,txt')
+        content = content.replace('# android.accept_sdk_license = False', 'android.accept_sdk_license = True')
+        
+        # NDK და API ვერსიების იძულებითი დაყენება
+        import re
+        content = re.sub(r'#?\s*android\.api\s*=.*', 'android.api = 33', content)
+        content = re.sub(r'#?\s*android\.minapi\s*=.*', 'android.minapi = 21', content)
+        content = re.sub(r'#?\s*android\.ndk\s*=.*', 'android.ndk = 25b', content)
+
+        with open('buildozer.spec', 'w') as f:
+            f.write(content)
+        "
+
+        # Buildozer-ის გაშვება yes-ის გარეშე
+        buildozer -v android debug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
