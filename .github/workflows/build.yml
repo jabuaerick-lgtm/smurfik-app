@@ -12,48 +12,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Build APK with Buildozer Action
+      uses: ArtemShedov/buildozer-action@v1.2
       with:
-        python-version: '3.10'
-
-    - name: Install System Dependencies
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        sudo apt-get update -y
-        sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake build-essential libffi-dev libssl-dev
-
-    - name: Install Buildozer & Cython
-      run: |
-        pip install --upgrade pip
-        pip install "cython<3.0.0" "buildozer==1.5.0"
-
-    - name: Configure and Build APK
-      run: |
-        python3 -m buildozer init
-        
-        # Python სკრიპტი buildozer.spec-ის გარანტირებული მოდიფიკაციისთვის
-        python3 -c "
-        with open('buildozer.spec', 'r') as f:
-            content = f.read()
-
-        # ჩანაცვლებები
-        content = content.replace('source.include_exts = py,png,jpg,kv,atlas', 'source.include_exts = py,png,txt')
-        content = content.replace('# android.accept_sdk_license = False', 'android.accept_sdk_license = True')
-        
-        # NDK და API ვერსიების იძულებითი დაყენება
-        import re
-        content = re.sub(r'#?\s*android\.api\s*=.*', 'android.api = 33', content)
-        content = re.sub(r'#?\s*android\.minapi\s*=.*', 'android.minapi = 21', content)
-        content = re.sub(r'#?\s*android\.ndk\s*=.*', 'android.ndk = 25b', content)
-
-        with open('buildozer.spec', 'w') as f:
-            f.write(content)
-        "
-
-        # Buildozer-ის გაშვება yes-ის გარეშე
-        buildozer -v android debug
+        command: buildozer -v android debug
+        buildozer_version: 1.5.0
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
