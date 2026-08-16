@@ -32,9 +32,18 @@ jobs:
     - name: Build APK with Buildozer
       run: |
         python3 -m buildozer init
+        
+        # ფაილების გაფართოებების მითითება
         sed -i 's/source.include_exts = py,png,jpg,kv,atlas/source.include_exts = py,png,txt/g' buildozer.spec
+        
+        # ლიცენზიის ავტომატური დადასტურება
         sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
-        yes | python3 -m buildozer -v android debug
+        
+        # სტაბილური NDK ვერსიის მითითება
+        sed -i 's/# android.ndk = 25b/android.ndk = 25b/g' buildozer.spec
+
+        # Buildozer-ის გაშვება yes pipe-ის გარეშე
+        python3 -m buildozer -v android debug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
